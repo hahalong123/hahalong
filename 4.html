@@ -1,0 +1,460 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语单词配对游戏</title>
+    <style>
+        body {
+            background-color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        #timer {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 16px;
+        }
+
+        #word-info {
+            position: absolute;
+            top: 10px;
+            left: 120px;
+            font-size: 11.2px;
+            /* 原字体大小16px的70% */
+            color: green;
+        }
+
+        #english-word-container {
+            display: flex;
+            align-items: center;
+            margin-top: 50px;
+        }
+
+        #english-word {
+            font-size: 24px;
+            color: red;
+            text-align: center;
+            background-color: white;
+            cursor: pointer;
+            word-wrap: break-word;
+        }
+
+        #repeat-button,
+        #speed-05-button,
+        #speed-075-button {
+            background-color: green;
+            color: white;
+            font-size: 8px;
+            padding: 4px 10px;
+            border: none;
+            border-radius: 10px;
+            margin-left: 5px;
+            cursor: pointer;
+        }
+
+        #chinese-options {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .option {
+            font-size: 14px;
+            padding: 8px 16px;
+            background-color: lightblue;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            margin-bottom: 20px; /* 每个中文方框之间空一行 */
+            white-space: pre-wrap; /* 超过一行自动换行 */
+            max-width: 300px; /* 限制最大宽度 */
+            text-align: left; /* 中文选项左对齐 */
+        }
+
+        #result {
+            position: fixed;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            font-size: 100px;
+        }
+
+        #info {
+            background-color: yellow;
+            color: red;
+            font-size: 12px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #summary {
+            margin-top: 20px;
+            text-align: left; /* 修改为左对齐 */
+            width: 100%; /* 占满宽度，方便手机端适配 */
+            max-width: 600px; /* 最大宽度限制 */
+        }
+
+        #summary.correct {
+            color: green;
+        }
+
+        #summary.wrong {
+            color: red;
+            font-weight: bold;
+        }
+
+        #reset {
+            background-color: green;
+            color: yellow;
+            font-size: 24px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: none;
+            cursor: pointer;
+        }
+
+        #start-button {
+            background-color: #2ecc71;
+            color: white;
+            font-size: 20px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 8px 0 #27ae60, 0 10px 15px rgba(0, 0, 0, 0.3);
+            margin-top: 100px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        #start-button:active {
+            box-shadow: 0 4px 0 #27ae60, 0 6px 8px rgba(0, 0, 0, 0.3);
+            transform: translateY(4px);
+        }
+
+        #emoji {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 100px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            #english-word {
+                font-size: 20px;
+            }
+
+            .option {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+
+            #result {
+                font-size: 80px;
+            }
+
+            #reset {
+                font-size: 20px;
+            }
+
+            #start-button {
+                font-size: 18px;
+                padding: 12px 24px;
+            }
+
+            #word-info {
+                left: 100px;
+            }
+
+            #summary {
+                font-size: 12px; /* 手机端字体大小调整 */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button id="start-button">请带上耳机 复习开始</button>
+    <div id="timer">0:00</div>
+    <div id="word-info"></div>
+    <div id="english-word-container">
+        <div id="english-word"></div>
+        <button id="repeat-button" style="display: none;">重复播放</button>
+        <button id="speed-05-button" style="display: none;">0.5倍</button>
+        <button id="speed-075-button" style="display: none;">0.75倍</button>
+    </div>
+    <div id="chinese-options"></div>
+    <div id="emoji"></div>
+    <div id="info">一小时训练记住30 - 100个单词，免费试学30分钟，注意：本次复习只考部分意思和其他词汇容易混淆，非全部含义。单词速记 微信咨询：hahalong123。</div>
+    <div id="result"></div>
+    <div id="summary"></div>
+    <button id="reset">重置</button>
+    <script>
+        const words = [
+{
+    english: 'backflip',
+    chinese: 'n. 后空翻（体操动作）',
+    options: ['n. 后空翻（体操动作）', 'n. 翻筋斗（通用术语）', 'n. 侧手翻（横向动作）', 'n. 手翻（支撑动作）'],
+    explainations: '<span style="color: red;">backflip n. 后空翻（体操动作）；somersault n. 翻筋斗（通用术语）；cartwheel n. 侧手翻（横向动作）；handspring n. 手翻（支撑动作）</span>'
+},
+{
+    english: 'incredible',
+    chinese: 'adj. 难以置信的（难以相信）',
+    options: ['adj. 难以置信的（难以相信）', 'adj. 不可信的（事实层面）', 'adj. 难以想象的（逻辑层面）', 'adj. 极好的（口语化）'],
+    explainations: '<span style="color: red;">incredible adj. 难以置信的（难以相信）；unbelievable adj. 不可信的（事实层面）；inconceivable adj. 难以想象的（逻辑层面）；fabulous adj. 极好的（口语化）</span>'
+}
+];
+
+        let currentWords = [...words];
+        let currentWord;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let results = [];
+        let startTime;
+        let timerInterval;
+        let repeatInterval;
+        let audio;
+        let activeButton;
+
+        function startTimer() {
+            startTime = new Date().getTime();
+            timerInterval = setInterval(() => {
+                const currentTime = new Date().getTime();
+                const elapsedTime = currentTime - startTime;
+                const minutes = Math.floor(elapsedTime / (1000 * 60));
+                const seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
+                const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                document.getElementById('timer').textContent = formattedTime;
+            }, 1000);
+        }
+
+        function getRandomOptions(correctOption) {
+            const word = words.find(w => w.chinese === correctOption);
+            return word.options.sort(() => Math.random() - 0.5);
+        }
+
+        function showNextWord() {
+            if (currentWords.length === 0) {
+                clearInterval(timerInterval);
+                showSummary();
+                return;
+            }
+            if (repeatInterval) {
+                return;
+            }
+            const randomIndex = Math.floor(Math.random() * currentWords.length);
+            currentWord = currentWords.splice(randomIndex, 1)[0];
+            document.getElementById('english-word').textContent = currentWord.english;
+            const options = getRandomOptions(currentWord.chinese);
+            const optionDiv = document.getElementById('chinese-options');
+            optionDiv.innerHTML = '';
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.classList.add('option');
+                button.textContent = option;
+                button.addEventListener('click', () => checkAnswer(option));
+                optionDiv.appendChild(button);
+            });
+            playSound(currentWord.english, 1);
+            const currentWordIndex = words.length - currentWords.length;
+            document.getElementById('word-info').textContent = `总共 ${words.length} 个单词，这个是第 ${currentWordIndex} 个单词`;
+            document.getElementById('word-info').style.display = 'block';
+            document.getElementById('repeat-button').style.display = 'block';
+            document.getElementById('speed-05-button').style.display = 'block';
+            document.getElementById('speed-075-button').style.display = 'block';
+        }
+
+        function playSound(word, speed) {
+            audio = new Audio(`https://dict.youdao.com/dictvoice?audio=${word}&type=2`);
+            audio.playbackRate = speed;
+            audio.play();
+        }
+
+        function checkAnswer(selectedOption) {
+            if (repeatInterval) {
+                return;
+            }
+            const resultDiv = document.getElementById('result');
+            const emojiDiv = document.getElementById('emoji');
+            if (selectedOption === currentWord.chinese) {
+                correctCount++;
+                results.push({ word: currentWord.english, correct: currentWord.chinese, selected: selectedOption });
+                resultDiv.textContent = '√';
+                resultDiv.style.color = 'green';
+                const smiles = ['😀', '😃', '😄', '😆', '😁', '🥳', '🤩', '😎', '🥰', '🤗', '😛', '😜'];
+                const randomSmile = smiles[Math.floor(Math.random() * smiles.length)];
+                emojiDiv.textContent = randomSmile;
+            } else {
+                wrongCount++;
+                results.push({ word: currentWord.english, correct: currentWord.chinese + '<br>' + currentWord.explainations, selected: selectedOption });
+                resultDiv.textContent = '×';
+                resultDiv.style.color = 'red';
+                const cries = ['😢', '😭', '😫', '😖', '😣', '🥺', '😓', '😩', '😿', '🙁', '😒', '🥹'];
+                const randomCry = cries[Math.floor(Math.random() * cries.length)];
+                emojiDiv.textContent = randomCry;
+            }
+            emojiDiv.style.display = 'block';
+            setTimeout(() => {
+                resultDiv.textContent = '';
+                emojiDiv.style.display = 'none';
+                showNextWord();
+            }, 1000);
+        }
+
+        function showSummary() {
+            const summaryDiv = document.getElementById('summary');
+            let wrongCountColor = wrongCount === 0? 'black' : 'red';
+            summaryDiv.innerHTML = `<p>正确: ${correctCount} <span style="color: ${wrongCountColor}">错误: ${wrongCount}</span></p>`;
+            const wrongResults = results.filter(result => result.correct!== result.selected);
+            wrongResults.forEach(result => {
+                const p = document.createElement('p');
+                const wordSpan = document.createElement('span');
+                wordSpan.style.color = 'red';
+                wordSpan.style.fontWeight = 'bold';
+                wordSpan.textContent = `${result.word}: `;
+                p.appendChild(wordSpan);
+                const wrongSpan = document.createElement('span');
+                wrongSpan.classList.add('wrong');
+                wrongSpan.textContent = ` 您选的是: ${result.selected} 正确的是: `;
+                const correctParts = result.correct.split('<br>');
+                const mainCorrectPart = correctParts.shift();
+                const correctSpan = document.createElement('span');
+                correctSpan.style.color = 'red';
+                correctSpan.style.fontWeight = 'bold';
+                correctSpan.textContent = mainCorrectPart;
+                wrongSpan.appendChild(correctSpan);
+                if (correctParts.length > 0) {
+                    const additionalInfoSpan = document.createElement('span');
+                    additionalInfoSpan.style.color = 'green';
+                    additionalInfoSpan.innerHTML = '<br>' + correctParts.join('<br>');
+                    wrongSpan.appendChild(additionalInfoSpan);
+                }
+                p.appendChild(wrongSpan);
+                summaryDiv.appendChild(p);
+            });
+            const currentTime = new Date().getTime();
+            const elapsedTime = currentTime - startTime;
+            const totalSeconds = elapsedTime / 1000;
+            const averageTime = totalSeconds / words.length;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            summaryDiv.innerHTML += `<p>你总共消耗时间为${formattedTime}，平均每个词的时间是：${averageTime.toFixed(2)}秒，目标是每个单词4秒，100%正确情况下，连续三次全对，时间越短，记忆的越深刻。错的越多，学习的越多。通过日常复习练习，  学10个单词，我们是复习40个单词。 速记1000个单词，我们掌握了4000个单词！举一反三！最终形成肌肉记忆！达到快速持且久记忆的目的。努力哦 ！这个方法适用所有的的日常记忆和学习哦！</p>`;
+            document.getElementById('english-word').textContent = '';
+            document.getElementById('chinese-options').innerHTML = '';
+            document.getElementById('reset').style.display = 'block';
+            document.getElementById('word-info').style.display = 'none';
+            clearInterval(repeatInterval);
+            document.getElementById('repeat-button').style.display = 'none';
+            document.getElementById('repeat-button').textContent = '重复播放';
+            document.getElementById('speed-05-button').style.display = 'none';
+            document.getElementById('speed-05-button').textContent = '0.5倍';
+            document.getElementById('speed-075-button').style.display = 'none';
+            document.getElementById('speed-075-button').textContent = '0.75倍';
+            activeButton = null;
+        }
+
+        function resetGame() {
+            currentWords = [...words];
+            correctCount = 0;
+            wrongCount = 0;
+            results = [];
+            document.getElementById('summary').innerHTML = '';
+            document.getElementById('reset').style.display = 'none';
+            startTimer();
+            showNextWord();
+        }
+
+        function stopActiveButton() {
+            if (repeatInterval) {
+                clearInterval(repeatInterval);
+                repeatInterval = null;
+                if (activeButton === document.getElementById('repeat-button')) {
+                    activeButton.textContent = '重复播放';
+                } else if (activeButton === document.getElementById('speed-05-button')) {
+                    activeButton.textContent = '0.5倍';
+                } else if (activeButton === document.getElementById('speed-075-button')) {
+                    activeButton.textContent = '0.75倍';
+                }
+                activeButton = null;
+            }
+        }
+
+        document.getElementById('english-word').addEventListener('click', () => {
+            playSound(currentWord.english, 1);
+        });
+
+        document.getElementById('reset').addEventListener('click', resetGame);
+
+        const startButton = document.getElementById('start-button');
+        startButton.addEventListener('click', () => {
+            startButton.style.display = 'none';
+            startTimer();
+            showNextWord();
+        });
+
+        const repeatButton = document.getElementById('repeat-button');
+        repeatButton.addEventListener('click', () => {
+            if (activeButton === repeatButton) {
+                stopActiveButton();
+            } else {
+                stopActiveButton();
+                playSound(currentWord.english, 1);
+                repeatInterval = setInterval(() => {
+                    playSound(currentWord.english, 1);
+                }, 1000);
+                repeatButton.textContent = '停止';
+                activeButton = repeatButton;
+            }
+        });
+
+        const speed05Button = document.getElementById('speed-05-button');
+        speed05Button.addEventListener('click', () => {
+            if (activeButton === speed05Button) {
+                stopActiveButton();
+            } else {
+                stopActiveButton();
+                playSound(currentWord.english, 0.5);
+                repeatInterval = setInterval(() => {
+                    playSound(currentWord.english, 0.5);
+                }, 2500);
+                speed05Button.textContent = '停止';
+                activeButton = speed05Button;
+            }
+        });
+
+        const speed075Button = document.getElementById('speed-075-button');
+        speed075Button.addEventListener('click', () => {
+            if (activeButton === speed075Button) {
+                stopActiveButton();
+            } else {
+                stopActiveButton();
+                playSound(currentWord.english, 0.75);
+                repeatInterval = setInterval(() => {
+                    playSound(currentWord.english, 0.75);
+                }, 1000);
+                speed075Button.textContent = '停止';
+                activeButton = speed075Button;
+            }
+        });
+    </script>
+</body>
+
+</html>
